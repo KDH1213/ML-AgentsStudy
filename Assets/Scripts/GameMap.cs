@@ -24,6 +24,8 @@ public class GameMap : MonoBehaviour
 
     private Vector2 resolution;
 
+    public Vector2 LeftTopPosition { get; private set; }
+
     private void Awake()
     {
         resolution.x = Screen.width;
@@ -89,6 +91,7 @@ public class GameMap : MonoBehaviour
 
         var creatStartPoint = new Vector2(startCreatePositionX, startCreatePositionY);
         var offsetPosition = new Vector3(createScale.x, -createScale.y) * 0.5f;
+        LeftTopPosition = creatStartPoint;
 
         Tile[] tiles = new Tile[createObjectCount.x * createObjectCount.y];
 
