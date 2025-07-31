@@ -10,8 +10,8 @@ public class GameMap : MonoBehaviour
     [SerializeField]
     private Vector2Int createObjectCount;
 
-    // [SerializeField]
-    // private float spacing;
+    [SerializeField]
+    private float spacing;
 
     [SerializeField]
     private float padding;
@@ -23,6 +23,7 @@ public class GameMap : MonoBehaviour
     private List<GameObject> createObjects = new List<GameObject>();
 
     private Vector2 resolution;
+
     private void Awake()
     {
         resolution.x = Screen.width;
@@ -36,6 +37,11 @@ public class GameMap : MonoBehaviour
         {
             ResetTileInfo();
         }
+    }
+
+    private void Start()
+    {
+        GameObject.FindWithTag("GameController").GetComponent<GameController>().onRestartGame.AddListener(ResetTileInfo);
     }
 
     [ContextMenu("DestoryMap")]
@@ -74,33 +80,36 @@ public class GameMap : MonoBehaviour
         mapObject.transform.localScale = new Vector2(width, height);
 
         var totalSize = new Vector2(createObjectCount.x, createObjectCount.y);
-        var createSize = new Vector2(width / totalSize.x, height / totalSize.y);
+        var createScale = new Vector2(width / totalSize.x, height / totalSize.y);
 
-        createSize = createSize.x < createSize.y ? new Vector2(createSize.x, createSize.x) : new Vector2(createSize.y, createSize.y);
+        createScale = createScale.x < createScale.y ? new Vector2(createScale.x, createScale.x) : new Vector2(createScale.y, createScale.y);
 
-        float startCreatePositionX = -(camera.transform.position.x + (createSize.x * (float)(createObjectCount.x / 2)));
-        float startCreatePositionY = camera.transform.position.y + (createSize.y * (float)(createObjectCount.y / 2));
+        float startCreatePositionX = -(camera.transform.position.x + (createScale.x * (float)(createObjectCount.x / 2)));
+        float startCreatePositionY = camera.transform.position.y + (createScale.y * (float)(createObjectCount.y / 2));
 
         var creatStartPoint = new Vector2(startCreatePositionX, startCreatePositionY);
-        var offsetPosition = new Vector3(createSize.x, -createSize.y) * 0.5f;
+        var offsetPosition = new Vector3(createScale.x, -createScale.y) * 0.5f;
 
         Tile[] tiles = new Tile[createObjectCount.x * createObjectCount.y];
 
         CreateTileInfos(ref tiles);
         SuffleTiles(tiles);
 
+        createScale.x -= spacing * 0.5f;
+        createScale.y -= spacing * 0.5f;
+
         for (int j = 0; j < createObjectCount.y; ++j)
         {
-            var creatPoint = creatStartPoint + (Vector2.down * j * createSize.y);
+            var creatPoint = creatStartPoint + (Vector2.down * j * createScale.y);
 
             for (int i = 0; i < createObjectCount.x; ++i)
             {
                 Vector3 position = new Vector3(creatPoint.x, creatPoint.y) + offsetPosition;
                 var createObject = Instantiate(applePrefab, position, Quaternion.identity);
-                createObject.transform.localScale = createSize;
+                createObject.transform.localScale = createScale;
 
                 createObjects.Add(createObject);
-                creatPoint.x += createSize.x;
+                creatPoint.x += createScale.x;
                 createObject.GetComponent<AppleTileObject>().SetTileInfo(tiles[j * createObjectCount.x + i]);
             }
         }
