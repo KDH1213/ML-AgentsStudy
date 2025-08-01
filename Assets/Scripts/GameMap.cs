@@ -9,6 +9,7 @@ public class GameMap : MonoBehaviour
 
     [SerializeField]
     private Vector2Int createObjectCount;
+    public Vector2Int CreateObjectCount => createObjectCount;
 
     [SerializeField]
     private float spacing;
@@ -20,7 +21,9 @@ public class GameMap : MonoBehaviour
     private GameObject mapObject;
 
     [SerializeField]
-    private List<GameObject> createObjects = new List<GameObject>();
+    private List<AppleTileObject> createObjects = new List<AppleTileObject>();
+
+    public List<AppleTileObject> CreateObjects => createObjects;
 
     private Vector2 resolution;
 
@@ -111,9 +114,10 @@ public class GameMap : MonoBehaviour
                 var createObject = Instantiate(applePrefab, position, Quaternion.identity);
                 createObject.transform.localScale = createScale;
 
-                createObjects.Add(createObject);
+                var appleTileObject = createObject.GetComponent<AppleTileObject>();
+                createObjects.Add(appleTileObject);
                 creatPoint.x += createScale.x;
-                createObject.GetComponent<AppleTileObject>().SetTileInfo(tiles[j * createObjectCount.x + i]);
+                appleTileObject.SetTileInfo(tiles[j * createObjectCount.x + i]);
             }
         }
 
@@ -165,7 +169,7 @@ public class GameMap : MonoBehaviour
 
         for (int i = 0; i < count; ++i)
         {
-            createObjects[i].SetActive(true);
+            createObjects[i].gameObject.SetActive(true);
             createObjects[i].GetComponent<AppleTileObject>().SetTileInfo(tiles[i]);
         }
     }
