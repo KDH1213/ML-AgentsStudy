@@ -1,9 +1,9 @@
 behaviors:
   AppleAgent:
     trainer_type: ppo
-    max_steps: 500000
+    max_steps: 50000
     time_horizon: 64
-    summary_freq: 1000
+    summary_freq: 100
     network_settings:
       num_layers: 2
       hidden_units: 128

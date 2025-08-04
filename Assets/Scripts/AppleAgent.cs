@@ -20,6 +20,15 @@ public class AppleAgent : Agent
     [SerializeField]
     private GameController controller;
 
+    [SerializeField]
+    private Transform debugRect;
+
+    [SerializeField]
+    private bool isDebug;
+
+    private Vector2 scale;
+    int objectTotalCount = 0;
+
     private void Start()
     {
         controller.onEndGame.AddListener(EndEpisode);
@@ -51,6 +60,9 @@ public class AppleAgent : Agent
             
             sensor.AddObservation(apple.Number); // ¡§±‘»≠
         }
+
+        scale = appleList[0].transform.localScale;
+        objectTotalCount = appleList.Count;
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -62,7 +74,10 @@ public class AppleAgent : Agent
         int findRangeY = actions.DiscreteActions[3];
 
         int startPositionX = index % sizeX;
-        int startPositionY = index % sizeY;
+        int startPositionY = index / sizeY;
+
+        int endPositionX = startPositionX + findRangeX;
+        int endPositionY = startPositionY + findRangeY;
 
         if (!gameMap.CreateObjects[index].gameObject.activeSelf)
         {
@@ -75,7 +90,7 @@ public class AppleAgent : Agent
         Debug.Log($"startPositionX : {startPositionX}");
         Debug.Log($"startPositionY : {startPositionY}");
 
-        if(findRangeY * sizeX + findRangeX < index)
+        if (endPositionY * sizeX + endPositionX > objectTotalCount)
         {
             SetReward(-1.0f);
             return;
@@ -123,8 +138,28 @@ public class AppleAgent : Agent
         }
         else
         {
-            SetReward(-1.0f);
+            SetReward(-number);
         }
+
+#if UNITY_EDITOR
+        if(isDebug)
+        {
+            debugRect.gameObject.SetActive(true);
+            int findRangehalfX = (findRangeX / 2);
+            int findRangehalfY = (findRangeY / 2);
+
+            int debugPositionX = startPositionX + findRangehalfX;
+            int debugPositionY = startPositionY + findRangehalfY;
+
+            var debugIndex = debugPositionY * sizeX + debugPositionX;
+            debugRect.localPosition = gameMap.CreateObjects[debugIndex].transform.position;
+            debugRect.localScale = new Vector3(scale.x * (float)findRangehalfX, scale.y * (float)findRangehalfY, 1f);
+        }
+        else
+        {
+            debugRect.gameObject.SetActive(false);
+        }
+#endif
     }
 
     private void EvaluateSelection()
