@@ -4,5 +4,8 @@
     Red,
     Green, 
     Blue,
+    Yellow,
+    Gray,
+    Black,
     End
 }

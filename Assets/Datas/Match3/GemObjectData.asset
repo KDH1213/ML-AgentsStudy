@@ -16,3 +16,13 @@ MonoBehaviour:
   - {fileID: 1919119131591955516, guid: 1e3ef67ad415ac347a176ace1102845f, type: 3}
   - {fileID: 8135778858102897505, guid: 3e666ef6db4117b45a5968cbbce91254, type: 3}
   - {fileID: 4675559702037592051, guid: 07961f39e2ebcdb4db354ab65cf72982, type: 3}
+  GemObjectFrefab: {fileID: 1919119131591955516, guid: 1e3ef67ad415ac347a176ace1102845f, type: 3}
+  gemColorTable:
+    m_Keys: 010000000200000003000000040000000500000006000000
+    m_Values:
+    - {r: 1, g: 0, b: 0, a: 1}
+    - {r: 0, g: 1, b: 0.255764, a: 1}
+    - {r: 0, g: 0.044991016, b: 1, a: 1}
+    - {r: 0.9638121, g: 1, b: 0, a: 1}
+    - {r: 0.54088044, g: 0.54088044, b: 0.54088044, a: 1}
+    - {r: 0, g: 0, b: 0, a: 1}

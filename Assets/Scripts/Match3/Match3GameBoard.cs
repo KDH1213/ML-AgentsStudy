@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -60,9 +59,14 @@ public class Match3GameBoard : MonoBehaviour
             Vector2 createPosition = startPosition + Vector2.up * j;
             for (int i = 0; i < match3BoadData.Width; ++i)
             {
-                var randomGem = gemObjectData.GetRamdomGem();
-                var createObject = Instantiate(randomGem);
+                var randomType = gemObjectData.GetRandomGemType();
+
+
+                // var randomGem = gemObjectData.GetRamdomGem();
+                var createObject = Instantiate(gemObjectData.GemObjectFrefab);
                 createObject.transform.position = createPosition;
+
+                createObject.SetGemType(randomType, gemObjectData.GetColor(randomType));
 
                 gridInfos[j, i].gemObject = createObject;
                 gridInfos[j, i].gemType = createObject.GemType;
@@ -76,12 +80,12 @@ public class Match3GameBoard : MonoBehaviour
     public bool IsMoveable((int, int) lhs, (int, int) rhs, ref List<(int, int)> matchGridList)
     {
         bool leftMoveable = IsCheckMatched(gridInfos[rhs.Item1, rhs.Item2].gemType, lhs.Item1, lhs.Item2, ref matchGridList);
-        bool rightMoveable = IsCheckMatched(gridInfos[lhs.Item1, lhs.Item2].gemType, lhs.Item1, lhs.Item2, ref matchGridList);
+        bool rightMoveable = IsCheckMatched(gridInfos[lhs.Item1, lhs.Item2].gemType, rhs.Item1, rhs.Item2, ref matchGridList);
 
         return leftMoveable || rightMoveable;
     }
 
-    public bool IsCheckMatched(GemType gemType, int col, int row, ref List<(int, int)> matchGridList)
+    public bool IsCheckMatched(GemType gemType, int row, int col, ref List<(int, int)> matchGridList)
     {
         bool isMatchedColumn = false;
         bool isMatchedRow = false;
@@ -182,7 +186,7 @@ public class Match3GameBoard : MonoBehaviour
 
     public void DestroyGem(ref List<(int, int)> matchGridList)
     {
-        foreach(var grid in findGridList)
+        foreach(var grid in matchGridList)
         {
             // 임시로 비활성화 하기
             gridInfos[grid.Item1, grid.Item2].gemObject.gameObject.SetActive(false);

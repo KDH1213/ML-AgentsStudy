@@ -11,19 +11,23 @@ public class Match3GameController : MonoBehaviour
 
     public void SeleteGemMove((int, int) lhs, (int,int)rhs)
     {
-        MatchStateType = Match3StateType.Wait;
+        MatchStateType = Match3StateType.FindMatches;
 
         matchGridList.Clear();
         if(gameBoard.IsMoveable(lhs, rhs, ref matchGridList))
         {
-            gameBoard.DestroyGem(ref matchGridList);
+            MatchStateType = Match3StateType.MoveFindMatches;
         }
         else
         {
-            MatchStateType = Match3StateType.None;
+            MatchStateType = Match3StateType.FindMatches;
         }
     }
 
-    
+    public void OnMoveMatches()
+    {
+        MatchStateType = Match3StateType.MoveMatches;
+        gameBoard.DestroyGem(ref matchGridList);
+    }
 
 }
