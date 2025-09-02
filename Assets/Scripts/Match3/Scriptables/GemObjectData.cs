@@ -14,6 +14,9 @@ public class GemObjectData : ScriptableObject
     [field: SerializeField]
     public SerializedDictionary<GemType, Color> gemColorTable;
 
+    [field: SerializeField]
+    public float MoveGemTime;
+
     public GemType GetRandomGemType()
     {
         return (GemType)Random.Range((int)GemType.Empty + 1, (int)GemType.End - 1);

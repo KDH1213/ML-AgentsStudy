@@ -24,10 +24,19 @@ public class Match3GameBoard : MonoBehaviour
 
     private List<(int, int)> findGridList = new List<(int, int)>();
 
+    private List<List<(int, int)>> matchColGridList = new List<List<(int, int)>>();
+    private List<List<(int, int)>> matchRowGridList = new List<List<(int, int)>>();
+
     private Vector2 leftBottomPosition;
 
     private int rowCount;
     private int columnCount;
+
+    private float moveTime;
+    private float currentMoveTime;
+
+    public System.Action onEndMoveAction;
+    private int moveCount;
 
     private void Awake()
     {
@@ -42,10 +51,10 @@ public class Match3GameBoard : MonoBehaviour
         rowCount = match3BoadData.Height;
         columnCount = match3BoadData.Width;
 
-        CreateGem();
+        MakeBoard();
     }
 
-    private void CreateGem()
+    private void MakeBoard()
     {
         gridInfos = new GridInfo[match3BoadData.Height, match3BoadData.Width];
         Vector2 startPosition = transform.position;
@@ -77,7 +86,7 @@ public class Match3GameBoard : MonoBehaviour
         }
     }
 
-    public bool IsMoveable((int, int) lhs, (int, int) rhs, ref List<(int, int)> matchGridList)
+    public bool IsSeleteMoveable((int, int) lhs, (int, int) rhs, ref List<(int, int)> matchGridList)
     {
         bool leftMoveable = IsCheckMatched(gridInfos[rhs.Item1, rhs.Item2].gemType, lhs.Item1, lhs.Item2, ref matchGridList);
         bool rightMoveable = IsCheckMatched(gridInfos[lhs.Item1, lhs.Item2].gemType, rhs.Item1, rhs.Item2, ref matchGridList);
@@ -127,11 +136,13 @@ public class Match3GameBoard : MonoBehaviour
 
         if (findGridList.Count >= 3)
         {
+
             foreach (var grid in findGridList)
             {
                 matchList.Add(grid);
             }
 
+            matchColGridList.Add(new List<(int,int)>(findGridList));
             findGridList.Clear();
 
             return true;
@@ -176,6 +187,7 @@ public class Match3GameBoard : MonoBehaviour
                 matchList.Add(grid);
             }
 
+            matchRowGridList.Add(new List<(int, int)>(findGridList));
             findGridList.Clear();
 
             return true;
@@ -193,12 +205,12 @@ public class Match3GameBoard : MonoBehaviour
 
             gridInfos[grid.Item1, grid.Item2].gemType = GemType.Empty;
             gridInfos[grid.Item1, grid.Item2].gemObject = null;
-        }        
+        }
     }
 
-    public void CreateGem(ref List<(int, int)> matchGridList)
+    public void OnMoveGem()
     {
-
+        int count = matchColGridList.Count;
     }
 
     public bool GetGrid(Vector2 findPosition, out (int, int) seleteGrid)
@@ -219,4 +231,24 @@ public class Match3GameBoard : MonoBehaviour
 
         return true;
     }
+
+    public void OnSelelteGemMove((int, int) lhs, (int, int) rhs)
+    {
+        gridInfos[lhs.Item1, lhs.Item2].gemObject.OnMoveGem(gridInfos[rhs.Item1, rhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+        gridInfos[rhs.Item1, rhs.Item2].gemObject.OnMoveGem(gridInfos[lhs.Item1, lhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+
+        (gridInfos[lhs.Item1, lhs.Item2].gemObject, gridInfos[rhs.Item1, rhs.Item2].gemObject) =  (gridInfos[rhs.Item1, rhs.Item2].gemObject, gridInfos[lhs.Item1, lhs.Item2].gemObject);
+        moveCount = 2;
+    }
+
+    public void OnEndMoveGem()
+    {
+        --moveCount;
+
+        if(moveCount == 0)
+        {
+            onEndMoveAction?.Invoke();
+        }
+    }
+
 }

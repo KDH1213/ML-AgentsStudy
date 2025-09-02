@@ -1,5 +1,4 @@
 using Unity.Mathematics;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -37,7 +36,7 @@ public class Match3GemSelector : MonoBehaviour
                     int range = math.abs(targetGrid.Item1 - seleteGrid.Item1) + math.abs(targetGrid.Item2 - seleteGrid.Item2);
                     if (range == 1)
                     {
-                        controller.SeleteGemMove(targetGrid, seleteGrid);
+                        controller.OnSeleteGemMove(targetGrid, seleteGrid);
                     }
 
                     isSelete = false;

@@ -9,25 +9,36 @@ public class Match3GameController : MonoBehaviour
     [SerializeField]
     private Match3GameBoard gameBoard;
 
-    public void SeleteGemMove((int, int) lhs, (int,int)rhs)
+    private void Awake()
     {
-        MatchStateType = Match3StateType.FindMatches;
+    }
 
-        matchGridList.Clear();
-        if(gameBoard.IsMoveable(lhs, rhs, ref matchGridList))
+    public void OnSeleteGemMove((int, int) lhs, (int,int)rhs)
+    {
+        if(MatchStateType == Match3StateType.FindMatches)
         {
-            MatchStateType = Match3StateType.MoveFindMatches;
-        }
-        else
-        {
-            MatchStateType = Match3StateType.FindMatches;
-        }
+            matchGridList.Clear();
+            if (gameBoard.IsSeleteMoveable(lhs, rhs, ref matchGridList))
+            {
+                MatchStateType = Match3StateType.MoveFindMatches;
+                gameBoard.OnSelelteGemMove(lhs, rhs);
+                gameBoard.onEndMoveAction += OnMoveMatches;
+            }
+            else
+            {
+                MatchStateType = Match3StateType.FindMatches;
+            }
+        }        
     }
 
     public void OnMoveMatches()
     {
         MatchStateType = Match3StateType.MoveMatches;
         gameBoard.DestroyGem(ref matchGridList);
+
+        gameBoard.onEndMoveAction -= OnMoveMatches;
+
+        gameBoard.OnMoveGem();
     }
 
 }
