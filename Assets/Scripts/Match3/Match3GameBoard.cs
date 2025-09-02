@@ -8,6 +8,17 @@ public struct GridInfo
     public Vector2 position;
 }
 
+public struct MoveInfo
+{
+    public (int, int) startGemMovePosition;
+    public int matchCount;
+
+    public MoveInfo((int, int) startGemMovePosition, int matchCount)
+    {
+        this.startGemMovePosition = startGemMovePosition;
+        this.matchCount = matchCount;
+    }
+}
 
 public class Match3GameBoard : MonoBehaviour
 {
@@ -23,9 +34,7 @@ public class Match3GameBoard : MonoBehaviour
     private GridInfo[,] gridInfos;
 
     private List<(int, int)> findGridList = new List<(int, int)>();
-
-    private List<List<(int, int)>> matchColGridList = new List<List<(int, int)>>();
-    private List<List<(int, int)>> matchRowGridList = new List<List<(int, int)>>();
+    private Dictionary<int, MoveInfo> moveGridTable = new Dictionary<int, MoveInfo>();
 
     private Vector2 leftBottomPosition;
 
@@ -136,14 +145,23 @@ public class Match3GameBoard : MonoBehaviour
 
         if (findGridList.Count >= 3)
         {
-
             foreach (var grid in findGridList)
             {
                 matchList.Add(grid);
+
+                if(!moveGridTable.TryGetValue(grid.Item2, out var moveInfo))
+                {
+                    moveGridTable.Add(grid.Item2, new MoveInfo((grid), 1));
+                }
+                else
+                {
+                    moveInfo.startGemMovePosition = grid.Item1 < moveInfo.startGemMovePosition.Item1 ? grid : moveInfo.startGemMovePosition;
+                    moveGridTable[grid.Item2] = moveInfo;
+                }
             }
 
-            matchColGridList.Add(new List<(int,int)>(findGridList));
             findGridList.Clear();
+
 
             return true;
         }
@@ -185,9 +203,19 @@ public class Match3GameBoard : MonoBehaviour
             foreach (var grid in findGridList)
             {
                 matchList.Add(grid);
+
+                if (!moveGridTable.TryGetValue(grid.Item2, out var moveInfo))
+                {
+                    moveGridTable.Add(grid.Item2, new MoveInfo((grid), findGridList.Count));
+                }
+                else
+                {
+                    moveInfo.startGemMovePosition = grid.Item1 < moveInfo.startGemMovePosition.Item1 ? grid : moveInfo.startGemMovePosition;
+                    moveInfo.matchCount = findGridList.Count;
+                    moveGridTable[grid.Item2] = moveInfo;
+                }
             }
 
-            matchRowGridList.Add(new List<(int, int)>(findGridList));
             findGridList.Clear();
 
             return true;
@@ -201,16 +229,25 @@ public class Match3GameBoard : MonoBehaviour
         foreach(var grid in matchGridList)
         {
             // 임시로 비활성화 하기
-            gridInfos[grid.Item1, grid.Item2].gemObject.gameObject.SetActive(false);
+            if (gridInfos[grid.Item1, grid.Item2].gemType != GemType.Empty)
+            {
+                gridInfos[grid.Item1, grid.Item2].gemObject.gameObject.SetActive(false);
 
-            gridInfos[grid.Item1, grid.Item2].gemType = GemType.Empty;
-            gridInfos[grid.Item1, grid.Item2].gemObject = null;
+                gridInfos[grid.Item1, grid.Item2].gemType = GemType.Empty;
+                gridInfos[grid.Item1, grid.Item2].gemObject = null;
+            }           
         }
     }
 
     public void OnMoveGem()
     {
-        int count = matchColGridList.Count;
+        foreach (var moveGridInfo in moveGridTable)
+        {
+            var gemMovePosition = moveGridInfo.Value.startGemMovePosition;
+            //var createCount = moveGridInfo.Value.matchCount;
+
+            //gridInfos[gemMovePosition.Item1, gemMovePosition.Item2].gemObject = gridInfos[gemMovePosition.Item1 + createCount, gemMovePosition.Item2].
+        }
     }
 
     public bool GetGrid(Vector2 findPosition, out (int, int) seleteGrid)
@@ -237,7 +274,7 @@ public class Match3GameBoard : MonoBehaviour
         gridInfos[lhs.Item1, lhs.Item2].gemObject.OnMoveGem(gridInfos[rhs.Item1, rhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
         gridInfos[rhs.Item1, rhs.Item2].gemObject.OnMoveGem(gridInfos[lhs.Item1, lhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
 
-        (gridInfos[lhs.Item1, lhs.Item2].gemObject, gridInfos[rhs.Item1, rhs.Item2].gemObject) =  (gridInfos[rhs.Item1, rhs.Item2].gemObject, gridInfos[lhs.Item1, lhs.Item2].gemObject);
+        (gridInfos[lhs.Item1, lhs.Item2].gemObject, gridInfos[rhs.Item1, rhs.Item2].gemObject) = (gridInfos[rhs.Item1, rhs.Item2].gemObject, gridInfos[lhs.Item1, lhs.Item2].gemObject);
         moveCount = 2;
     }
 
