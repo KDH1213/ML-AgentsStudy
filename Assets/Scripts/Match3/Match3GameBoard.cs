@@ -20,6 +20,57 @@ public struct MoveInfo
     }
 }
 
+public enum FindType
+{
+    Row,
+    Col
+}
+
+public enum FindDirection
+{
+    Up,
+    Down,
+    Left,
+    Right
+}
+
+public struct Point
+{
+    public int x, y;
+    public Point(int x, int y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    public static Point operator +(Point a, Point b)
+    {
+        a.x += b.x;
+        a.y += b.y;
+        return a;
+    }
+
+    public static Point operator +(Point a, (int, int) b)
+    {
+        a.x += b.Item2;
+        a.y += b.Item1;
+        return a;
+    }
+
+    public static (int, int) operator +((int,int) a, Point b)
+    {
+        a.Item1 += b.y;
+        a.Item2 += b.x;
+        return a;
+    }
+
+    public static Point Up => new Point(0, 1);
+    public static Point Down => new Point(0, -1);
+    public static Point Left => new Point(-1, 0);
+    public static Point Right => new Point(1, 0);
+}
+
+
 public class Match3GameBoard : MonoBehaviour
 {
     [SerializeField]
@@ -37,6 +88,9 @@ public class Match3GameBoard : MonoBehaviour
     private Dictionary<int, MoveInfo> moveGridTable = new Dictionary<int, MoveInfo>();
 
     private Vector2 leftBottomPosition;
+    private Vector2 scale = Vector2.one;
+
+    private Point[] FindDirections = new Point[4] { Point.Up, Point.Down, Point.Left, Point.Right };
 
     private int rowCount;
     private int columnCount;
@@ -77,14 +131,8 @@ public class Match3GameBoard : MonoBehaviour
             Vector2 createPosition = startPosition + Vector2.up * j;
             for (int i = 0; i < match3BoadData.Width; ++i)
             {
-                var randomType = gemObjectData.GetRandomGemType();
-
-
-                // var randomGem = gemObjectData.GetRamdomGem();
-                var createObject = Instantiate(gemObjectData.GemObjectFrefab);
+                var createObject = CreateRandomGem();                
                 createObject.transform.position = createPosition;
-
-                createObject.SetGemType(randomType, gemObjectData.GetColor(randomType));
 
                 gridInfos[j, i].gemObject = createObject;
                 gridInfos[j, i].gemType = createObject.GemType;
@@ -93,6 +141,14 @@ public class Match3GameBoard : MonoBehaviour
                 createPosition += Vector2.right;
             }
         }
+    }
+
+    public GemObject CreateRandomGem()
+    {
+        var randomType = gemObjectData.GetRandomGemType();
+        var createObject = Instantiate(gemObjectData.GemObjectFrefab);
+        createObject.SetGemType(randomType, gemObjectData.GetColor(randomType));
+        return createObject;
     }
 
     public bool IsSeleteMoveable((int, int) lhs, (int, int) rhs, ref List<(int, int)> matchGridList)
@@ -112,6 +168,34 @@ public class Match3GameBoard : MonoBehaviour
         isMatchedRow = IsCheckRow(gemType, col, row, ref matchGridList);
 
         return isMatchedColumn || isMatchedRow;
+    }
+
+    public bool IsCheckMatched((int, int)findGrid)
+    {
+        bool isMatchedColumn = false;
+        bool isMatchedRow = false;
+
+
+
+        return isMatchedColumn || isMatchedRow;
+    }
+
+    public bool IsCheckMatch((int, int) findGrid, GemType gemType, FindDirection findDirection)
+    {
+        int index = (int)findDirection;
+
+        for (int i = 0; i < 2; ++i)
+        {
+            findGrid += FindDirections[index];
+
+            if (gridInfos[findGrid.Item1, findGrid.Item2].gemObject == null
+                || gridInfos[findGrid.Item1, findGrid.Item2].gemType != gemType)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public bool IsCheckColumn(GemType gemType, int col, int row, ref List<(int, int)> matchList)
@@ -161,11 +245,10 @@ public class Match3GameBoard : MonoBehaviour
             }
 
             findGridList.Clear();
-
-
             return true;
         }
 
+        findGridList.Clear();
         return false;
     }
 
@@ -180,6 +263,8 @@ public class Match3GameBoard : MonoBehaviour
             if (rowCount == findrow
                 || gemType != gridInfos[findrow, col].gemType)
             {
+                findGridList.Clear();
+                findGridList.Add((row, col));
                 break;
             }
 
@@ -192,6 +277,8 @@ public class Match3GameBoard : MonoBehaviour
             if (0 > findrow
                 || gemType != gridInfos[findrow, col].gemType)
             {
+                findGridList.Clear();
+                findGridList.Add((row, col));
                 break;
             }
 
@@ -221,6 +308,7 @@ public class Match3GameBoard : MonoBehaviour
             return true;
         }
 
+        findGridList.Clear();
         return false;
     }
 
@@ -241,13 +329,49 @@ public class Match3GameBoard : MonoBehaviour
 
     public void OnMoveGem()
     {
+        moveCount = 0;
+
         foreach (var moveGridInfo in moveGridTable)
         {
-            var gemMovePosition = moveGridInfo.Value.startGemMovePosition;
-            //var createCount = moveGridInfo.Value.matchCount;
+            var gemDestinationPosition = moveGridInfo.Value.startGemMovePosition;
+            var moveTargetPosition = (gemDestinationPosition.Item1 + moveGridInfo.Value.matchCount, gemDestinationPosition.Item2);
 
-            //gridInfos[gemMovePosition.Item1, gemMovePosition.Item2].gemObject = gridInfos[gemMovePosition.Item1 + createCount, gemMovePosition.Item2].
+            bool isEnd = false;
+            while (!isEnd)
+            {
+                GemObject gemObject;
+
+                if (moveTargetPosition.Item1 >= rowCount)
+                {
+                    var createObject = CreateRandomGem();
+                    gemObject = createObject;
+
+                    var createPosition = gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].position;
+                    createPosition.y = leftBottomPosition.y + (scale.y * moveTargetPosition.Item1);
+                    createObject.transform.position = createPosition;// GetGridPosition(moveTargetPosition);
+                }
+                else
+                {
+                    gemObject = gridInfos[moveTargetPosition.Item1, moveTargetPosition.Item2].gemObject;
+                }
+
+                gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].gemObject = gemObject;
+                gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].gemType = gemObject.GemType;
+
+                gemObject.OnMoveGem(gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+                ++moveCount;
+
+                ++gemDestinationPosition.Item1;
+                ++moveTargetPosition.Item1;
+
+                if (gemDestinationPosition.Item1 >= rowCount)
+                {
+                    isEnd = true;
+                }
+            }
         }
+
+        moveGridTable.Clear();
     }
 
     public bool GetGrid(Vector2 findPosition, out (int, int) seleteGrid)
@@ -267,6 +391,11 @@ public class Match3GameBoard : MonoBehaviour
         }
 
         return true;
+    }
+
+    public Vector2 GetGridPosition((int, int) grid)
+    {
+        return leftBottomPosition + scale + new Vector2(grid.Item1, grid.Item2);
     }
 
     public void OnSelelteGemMove((int, int) lhs, (int, int) rhs)

@@ -38,7 +38,13 @@ public class Match3GameController : MonoBehaviour
 
         gameBoard.onEndMoveAction -= OnMoveMatches;
 
+        gameBoard.onEndMoveAction += OnEndMoveMatches;
         gameBoard.OnMoveGem();
     }
 
+    public void OnEndMoveMatches()
+    {
+        gameBoard.onEndMoveAction -= OnEndMoveMatches;
+        MatchStateType = Match3StateType.FindMatches;
+    }
 }

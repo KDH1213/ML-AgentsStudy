@@ -19,7 +19,7 @@ public class GemObject : MonoBehaviour, IGem
         
     }
 
-    private void Start()
+    private void Awake()
     {
         enabled = false;
     }
