@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Match3GameController : MonoBehaviour
 {
-    private List<(int, int)> matchGridList = new List<(int, int)>();
+    private List<Point> matchGridList = new List<Point>();
     public Match3StateType MatchStateType { private set; get; }
 
     [SerializeField]
@@ -13,7 +13,7 @@ public class Match3GameController : MonoBehaviour
     {
     }
 
-    public void OnSeleteGemMove((int, int) lhs, (int,int)rhs)
+    public void OnSeleteGemMove(Point lhs, Point rhs)
     {
         if(MatchStateType == Match3StateType.FindMatches)
         {
@@ -40,6 +40,7 @@ public class Match3GameController : MonoBehaviour
 
         gameBoard.onEndMoveAction += OnEndMoveMatches;
         gameBoard.OnMoveGem();
+        MatchStateType = Match3StateType.FindMatches;
     }
 
     public void OnEndMoveMatches()

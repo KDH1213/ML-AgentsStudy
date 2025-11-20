@@ -169,6 +169,7 @@ MonoBehaviour:
   backgroundPrefab: {fileID: 276541466776324507, guid: f31edbbdbcd8a4b4cb807f4891e6e87d, type: 3}
   match3BoadData: {fileID: 11400000, guid: 349ef1049fc5f124599a8120a0828fd2, type: 2}
   gemObjectData: {fileID: 11400000, guid: f33c7933a9a4ec94e84836497681b54e, type: 2}
+  isDebug: 0
 --- !u!114 &177334390
 MonoBehaviour:
   m_ObjectHideFlags: 0

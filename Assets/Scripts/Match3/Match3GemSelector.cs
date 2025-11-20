@@ -11,7 +11,7 @@ public class Match3GemSelector : MonoBehaviour
     private Match3GameController controller;
 
     private bool isSelete = false;
-    private (int, int) targetGrid;
+    private Point targetGrid;
 
     public void OnClick(InputAction.CallbackContext context)
     {
@@ -29,11 +29,11 @@ public class Match3GemSelector : MonoBehaviour
             else
             {
                 var findPosition = Camera.main.ScreenToWorldPoint(Mouse.current.position.value);
-                (int, int) seleteGrid;
+                Point seleteGrid;
 
                 if (gameBoard.GetGrid(findPosition, out seleteGrid))
                 {
-                    int range = math.abs(targetGrid.Item1 - seleteGrid.Item1) + math.abs(targetGrid.Item2 - seleteGrid.Item2);
+                    int range = math.abs(targetGrid.y - seleteGrid.y) + math.abs(targetGrid.x - seleteGrid.x);
                     if (range == 1)
                     {
                         controller.OnSeleteGemMove(targetGrid, seleteGrid);

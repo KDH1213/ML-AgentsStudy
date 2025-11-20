@@ -6,14 +6,16 @@ public struct GridInfo
     public GemObject gemObject;
     public GemType gemType;
     public Vector2 position;
+
+    public Point point;
 }
 
 public struct MoveInfo
 {
-    public (int, int) startGemMovePosition;
+    public Point startGemMovePosition;
     public int matchCount;
 
-    public MoveInfo((int, int) startGemMovePosition, int matchCount)
+    public MoveInfo(Point startGemMovePosition, int matchCount)
     {
         this.startGemMovePosition = startGemMovePosition;
         this.matchCount = matchCount;
@@ -84,7 +86,7 @@ public class Match3GameBoard : MonoBehaviour
 
     private GridInfo[,] gridInfos;
 
-    private List<(int, int)> findGridList = new List<(int, int)>();
+    private List<Point> findGridList = new List<Point>();
     private Dictionary<int, MoveInfo> moveGridTable = new Dictionary<int, MoveInfo>();
 
     private Vector2 leftBottomPosition;
@@ -100,6 +102,9 @@ public class Match3GameBoard : MonoBehaviour
 
     public System.Action onEndMoveAction;
     private int moveCount;
+
+    [SerializeField]
+    private bool isDebug = true;
 
     private void Awake()
     {
@@ -137,6 +142,7 @@ public class Match3GameBoard : MonoBehaviour
                 gridInfos[j, i].gemObject = createObject;
                 gridInfos[j, i].gemType = createObject.GemType;
                 gridInfos[j, i].position = createPosition;
+                gridInfos[j, i].point = new Point(j, i);
 
                 createPosition += Vector2.right;
             }
@@ -151,26 +157,38 @@ public class Match3GameBoard : MonoBehaviour
         return createObject;
     }
 
-    public bool IsSeleteMoveable((int, int) lhs, (int, int) rhs, ref List<(int, int)> matchGridList)
+    public bool IsSeleteMoveable(Point lhs, Point rhs, ref List<Point> matchGridList)
     {
-        bool leftMoveable = IsCheckMatched(gridInfos[rhs.Item1, rhs.Item2].gemType, lhs.Item1, lhs.Item2, ref matchGridList);
-        bool rightMoveable = IsCheckMatched(gridInfos[lhs.Item1, lhs.Item2].gemType, rhs.Item1, rhs.Item2, ref matchGridList);
-
+        OnChangeGridInfo(lhs, rhs);
+        bool leftMoveable = IsCheckMatched(lhs, ref matchGridList);
+        bool rightMoveable = IsCheckMatched(rhs, ref matchGridList);
+        OnChangeGridInfo(lhs, rhs);
         return leftMoveable || rightMoveable;
     }
 
-    public bool IsCheckMatched(GemType gemType, int row, int col, ref List<(int, int)> matchGridList)
+    public bool IsCheckMatched(Point coordinate, ref List<Point> matchGridList)
     {
         bool isMatchedColumn = false;
         bool isMatchedRow = false;
 
-        isMatchedColumn = IsCheckColumn(gemType, col, row, ref matchGridList);
-        isMatchedRow = IsCheckRow(gemType, col, row, ref matchGridList);
+        isMatchedColumn = IsCheckColumn(gridInfos[coordinate.y, coordinate.x].gemType, coordinate, ref matchGridList);
+        isMatchedRow = IsCheckRow(gridInfos[coordinate.y, coordinate.x].gemType, coordinate, ref matchGridList);
 
         return isMatchedColumn || isMatchedRow;
     }
 
-    public bool IsCheckMatched((int, int)findGrid)
+    public bool IsCheckMatched(GemType gemType, Point coordinate, ref List<Point> matchGridList)
+    {
+        bool isMatchedColumn = false;
+        bool isMatchedRow = false;
+
+        isMatchedColumn = IsCheckColumn(gemType, coordinate, ref matchGridList);
+        isMatchedRow = IsCheckRow(gemType, coordinate, ref matchGridList);
+
+        return isMatchedColumn || isMatchedRow;
+    }
+
+    public bool IsCheckMatched(Point findGrid)
     {
         bool isMatchedColumn = false;
         bool isMatchedRow = false;
@@ -180,7 +198,7 @@ public class Match3GameBoard : MonoBehaviour
         return isMatchedColumn || isMatchedRow;
     }
 
-    public bool IsCheckMatch((int, int) findGrid, GemType gemType, FindDirection findDirection)
+    public bool IsCheckMatch(Point findGrid, GemType gemType, FindDirection findDirection)
     {
         int index = (int)findDirection;
 
@@ -188,8 +206,8 @@ public class Match3GameBoard : MonoBehaviour
         {
             findGrid += FindDirections[index];
 
-            if (gridInfos[findGrid.Item1, findGrid.Item2].gemObject == null
-                || gridInfos[findGrid.Item1, findGrid.Item2].gemType != gemType)
+            if (gridInfos[findGrid.y, findGrid.x].gemObject == null
+                || gridInfos[findGrid.y, findGrid.x].gemType != gemType)
             {
                 return false;
             }
@@ -198,33 +216,33 @@ public class Match3GameBoard : MonoBehaviour
         return true;
     }
 
-    public bool IsCheckColumn(GemType gemType, int col, int row, ref List<(int, int)> matchList)
+    public bool IsCheckColumn(GemType gemType, Point coordinate, ref List<Point> matchList)
     {
         findGridList.Clear();
-        findGridList.Add((row, col));
+        findGridList.Add(coordinate);
 
         for (int i = 1; i < 3; ++i)
         {
-            int findCol = col + i;
+            int findCol = coordinate.x + i;
             if (columnCount == findCol
-                || gemType != gridInfos[row, findCol].gemType)
+                || gemType != gridInfos[coordinate.y, findCol].gemType)
             {
                 break;
             }
 
-            findGridList.Add((row, findCol));
+            findGridList.Add(new (findCol, coordinate.y));
         }
 
         for (int i = 1; i < 3; ++i)
         {
-            int findCol = col - i;
+            int findCol = coordinate.x - i;
             if (0 > findCol
-                || gemType != gridInfos[row, findCol].gemType)
+                || gemType != gridInfos[coordinate.y, findCol].gemType)
             {
                 break;
             }
 
-            findGridList.Add((row, findCol));
+            findGridList.Add(new(findCol, coordinate.y));
         }
 
         if (findGridList.Count >= 3)
@@ -233,14 +251,14 @@ public class Match3GameBoard : MonoBehaviour
             {
                 matchList.Add(grid);
 
-                if(!moveGridTable.TryGetValue(grid.Item2, out var moveInfo))
+                if(!moveGridTable.TryGetValue(grid.x, out var moveInfo))
                 {
-                    moveGridTable.Add(grid.Item2, new MoveInfo((grid), 1));
+                    moveGridTable.Add(grid.x, new MoveInfo(grid, 1));
                 }
                 else
                 {
-                    moveInfo.startGemMovePosition = grid.Item1 < moveInfo.startGemMovePosition.Item1 ? grid : moveInfo.startGemMovePosition;
-                    moveGridTable[grid.Item2] = moveInfo;
+                    moveInfo.startGemMovePosition = grid.y < moveInfo.startGemMovePosition.y ? grid : moveInfo.startGemMovePosition;
+                    moveGridTable[grid.x] = moveInfo;
                 }
             }
 
@@ -252,37 +270,33 @@ public class Match3GameBoard : MonoBehaviour
         return false;
     }
 
-    public bool IsCheckRow(GemType gemType, int col, int row, ref List<(int, int)> matchList)
+    public bool IsCheckRow(GemType gemType, Point coordinate, ref List<Point> matchList)
     {
         findGridList.Clear();
-        findGridList.Add((row, col));
+        findGridList.Add(coordinate);
 
         for (int i = 1; i < 3; ++i)
         {
-            int findrow = row + i;
+            int findrow = coordinate.y + i;
             if (rowCount == findrow
-                || gemType != gridInfos[findrow, col].gemType)
+                || gemType != gridInfos[findrow, coordinate.x].gemType)
             {
-                findGridList.Clear();
-                findGridList.Add((row, col));
                 break;
             }
 
-            findGridList.Add((findrow, col));
+            findGridList.Add(new (coordinate.x, findrow));
         }
 
         for (int i = 1; i < 3; ++i)
         {
-            int findrow = row - i;
+            int findrow = coordinate.y - i;
             if (0 > findrow
-                || gemType != gridInfos[findrow, col].gemType)
+                || gemType != gridInfos[findrow, coordinate.x].gemType)
             {
-                findGridList.Clear();
-                findGridList.Add((row, col));
                 break;
             }
 
-            findGridList.Add((findrow, col));
+            findGridList.Add(new (coordinate.x, findrow));
         }
 
         if (findGridList.Count >= 3)
@@ -291,15 +305,15 @@ public class Match3GameBoard : MonoBehaviour
             {
                 matchList.Add(grid);
 
-                if (!moveGridTable.TryGetValue(grid.Item2, out var moveInfo))
+                if (!moveGridTable.TryGetValue(grid.x, out var moveInfo))
                 {
-                    moveGridTable.Add(grid.Item2, new MoveInfo((grid), findGridList.Count));
+                    moveGridTable.Add(grid.x, new MoveInfo(grid, findGridList.Count));
                 }
                 else
                 {
-                    moveInfo.startGemMovePosition = grid.Item1 < moveInfo.startGemMovePosition.Item1 ? grid : moveInfo.startGemMovePosition;
+                    moveInfo.startGemMovePosition = grid.y < moveInfo.startGemMovePosition.y ? grid : moveInfo.startGemMovePosition;
                     moveInfo.matchCount = findGridList.Count;
-                    moveGridTable[grid.Item2] = moveInfo;
+                    moveGridTable[grid.x] = moveInfo;
                 }
             }
 
@@ -312,17 +326,23 @@ public class Match3GameBoard : MonoBehaviour
         return false;
     }
 
-    public void DestroyGem(ref List<(int, int)> matchGridList)
+    private void OnChangeGridInfo(Point lhs ,Point rhs)
+    {
+        (gridInfos[lhs.y, lhs.x].gemType, gridInfos[rhs.y, rhs.x].gemType) =  (gridInfos[rhs.y, rhs.x].gemType, gridInfos[lhs.y, lhs.x].gemType);
+        (gridInfos[lhs.y, lhs.x].gemObject, gridInfos[rhs.y, rhs.x].gemObject) = (gridInfos[rhs.y, rhs.x].gemObject, gridInfos[lhs.y, lhs.x].gemObject);
+    }
+
+    public void DestroyGem(ref List<Point> matchGridList)
     {
         foreach(var grid in matchGridList)
         {
             // 임시로 비활성화 하기
-            if (gridInfos[grid.Item1, grid.Item2].gemType != GemType.Empty)
+            if (gridInfos[grid.y, grid.x].gemType != GemType.Empty)
             {
-                gridInfos[grid.Item1, grid.Item2].gemObject.gameObject.SetActive(false);
+                gridInfos[grid.y, grid.x].gemObject.gameObject.SetActive(false);
 
-                gridInfos[grid.Item1, grid.Item2].gemType = GemType.Empty;
-                gridInfos[grid.Item1, grid.Item2].gemObject = null;
+                gridInfos[grid.y, grid.x].gemType = GemType.Empty;
+                gridInfos[grid.y, grid.x].gemObject = null;
             }           
         }
     }
@@ -334,76 +354,92 @@ public class Match3GameBoard : MonoBehaviour
         foreach (var moveGridInfo in moveGridTable)
         {
             var gemDestinationPosition = moveGridInfo.Value.startGemMovePosition;
-            var moveTargetPosition = (gemDestinationPosition.Item1 + moveGridInfo.Value.matchCount, gemDestinationPosition.Item2);
+            var moveTargetPosition = new Point(gemDestinationPosition.x, gemDestinationPosition.y + moveGridInfo.Value.matchCount);
 
-            bool isEnd = false;
-            while (!isEnd)
+            //bool isEnd = false;
+            while (gemDestinationPosition.y < rowCount)
             {
                 GemObject gemObject;
 
-                if (moveTargetPosition.Item1 >= rowCount)
+                if (moveTargetPosition.y >= rowCount)
                 {
                     var createObject = CreateRandomGem();
                     gemObject = createObject;
 
-                    var createPosition = gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].position;
-                    createPosition.y = leftBottomPosition.y + (scale.y * moveTargetPosition.Item1);
+                    var createPosition = gridInfos[gemDestinationPosition.y, gemDestinationPosition.x].position;
+                    createPosition.y = leftBottomPosition.y + (scale.y * moveTargetPosition.y);
                     createObject.transform.position = createPosition;// GetGridPosition(moveTargetPosition);
                 }
                 else
                 {
-                    gemObject = gridInfos[moveTargetPosition.Item1, moveTargetPosition.Item2].gemObject;
+                    if(gridInfos[moveTargetPosition.y, moveTargetPosition.x].gemObject == null)
+                    {
+                        ++moveTargetPosition.y;
+                        continue;
+                    }
+                    else
+                    {
+                        gemObject = gridInfos[moveTargetPosition.y, moveTargetPosition.x].gemObject;
+                    }
                 }
 
-                gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].gemObject = gemObject;
-                gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].gemType = gemObject.GemType;
+                if (gemObject == null)
+                {
+                    Debug.LogError($"Index : {gemDestinationPosition.y} , {gemDestinationPosition.x}");
+                }
 
-                gemObject.OnMoveGem(gridInfos[gemDestinationPosition.Item1, gemDestinationPosition.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+                if(gemDestinationPosition.y > rowCount
+                    || gemDestinationPosition.y < 0
+                    || gemDestinationPosition.x > rowCount
+                    || gemDestinationPosition.x < 0)
+                {
+                    Debug.LogError($"Index : {gemDestinationPosition.y} , {gemDestinationPosition.x}");
+                }
+
+                gridInfos[gemDestinationPosition.y, gemDestinationPosition.x].gemObject = gemObject;
+                gridInfos[gemDestinationPosition.y, gemDestinationPosition.x].gemType = gemObject.GemType;
+
+                gemObject.OnMoveGem(gridInfos[gemDestinationPosition.y, gemDestinationPosition.x].position, gemObjectData.MoveGemTime, OnEndMoveGem);
                 ++moveCount;
 
-                ++gemDestinationPosition.Item1;
-                ++moveTargetPosition.Item1;
-
-                if (gemDestinationPosition.Item1 >= rowCount)
-                {
-                    isEnd = true;
-                }
+                ++gemDestinationPosition.y;
+                ++moveTargetPosition.y;
             }
         }
 
         moveGridTable.Clear();
     }
 
-    public bool GetGrid(Vector2 findPosition, out (int, int) seleteGrid)
+    public bool GetGrid(Vector2 findPosition, out Point seleteGrid)
     {
         var position = findPosition - leftBottomPosition + new Vector2(0.5f, 0.5f);
-        seleteGrid.Item1 = (int)position.y;
-        seleteGrid.Item2 = (int)position.x;
+        seleteGrid.y = (int)position.y;
+        seleteGrid.x = (int)position.x;
 
         Debug.Log($"y : {position.y}, x : {position.x}");
-        Debug.Log($"x : {seleteGrid.Item2}, y : {seleteGrid.Item1}");
+        Debug.Log($"x : {seleteGrid.x}, y : {seleteGrid.y}");
 
         if (position.x < 0f || position.y < 0f
-            || seleteGrid.Item1 >= rowCount || seleteGrid.Item2 >= columnCount)
+            || seleteGrid.y >= rowCount || seleteGrid.x >= columnCount)
         {
-            seleteGrid = (-1, -1);
+            seleteGrid = new (-1, -1);
             return false;
         }
 
         return true;
     }
 
-    public Vector2 GetGridPosition((int, int) grid)
+    public Vector2 GetGridPosition(Point grid)
     {
-        return leftBottomPosition + scale + new Vector2(grid.Item1, grid.Item2);
+        return leftBottomPosition + scale + new Vector2(grid.y, grid.x);
     }
 
-    public void OnSelelteGemMove((int, int) lhs, (int, int) rhs)
+    public void OnSelelteGemMove(Point lhs, Point rhs)
     {
-        gridInfos[lhs.Item1, lhs.Item2].gemObject.OnMoveGem(gridInfos[rhs.Item1, rhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
-        gridInfos[rhs.Item1, rhs.Item2].gemObject.OnMoveGem(gridInfos[lhs.Item1, lhs.Item2].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+        gridInfos[lhs.y, lhs.x].gemObject.OnMoveGem(gridInfos[rhs.y, rhs.x].position, gemObjectData.MoveGemTime, OnEndMoveGem);
+        gridInfos[rhs.y, rhs.x].gemObject.OnMoveGem(gridInfos[lhs.y, lhs.x].position, gemObjectData.MoveGemTime, OnEndMoveGem);
 
-        (gridInfos[lhs.Item1, lhs.Item2].gemObject, gridInfos[rhs.Item1, rhs.Item2].gemObject) = (gridInfos[rhs.Item1, rhs.Item2].gemObject, gridInfos[lhs.Item1, lhs.Item2].gemObject);
+        OnChangeGridInfo(lhs, rhs);
         moveCount = 2;
     }
 
@@ -411,9 +447,34 @@ public class Match3GameBoard : MonoBehaviour
     {
         --moveCount;
 
-        if(moveCount == 0)
+        if (moveCount == 0)
         {
             onEndMoveAction?.Invoke();
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if(isDebug)
+        {
+            Vector2 pos = new (0.5f, 0f);
+            GUIStyle style = new GUIStyle();
+            style.normal.textColor = Color.black;   // 글자 색상 변경
+            style.fontSize = 14;                   // 글자 크기
+            style.alignment = TextAnchor.MiddleCenter;
+
+            if(gridInfos.Length == 0)
+            {
+                return;
+            }
+
+            foreach (var item in gridInfos)
+            {
+#if UNITY_EDITOR
+                UnityEditor.Handles.Label(item.position , $"{item.gemType.ToString()}\n{item.point.y}, {item.point.x}", style);
+#endif
+                //Gizmos.DrawIcon(item.position, $"{item.gemType.ToString()}\n{item.point.y}, {item.point.x}", false, Color.black);
+            }
         }
     }
 
